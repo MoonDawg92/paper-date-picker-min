@@ -1,0 +1,367 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/paper-input/paper-input.html">
+<link rel="import" href="bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="bower_components/paper-material/paper-material.html">
+<link rel="import" href="bower_components/paper-fab/paper-fab.html">
+
+
+<dom-module id="date-picker">
+	<template>
+        <style>
+            div {
+                @apply(--paper-font-common-base);
+            }
+
+            paper-input {
+                display: inline-block;
+                width: 150px;
+            }
+
+            paper-material {
+                height: 245px;
+                width: 250px;
+                background-color: white;
+            }
+
+            table {
+                width: 100%; 
+                border-collapse: collapse; 
+                table-layout: fixed
+            }
+            
+            td {
+                text-align: center; 
+                padding: 5px;
+            }
+            
+            .container {  
+                position: absolute;  
+                z-index: 2;
+                -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+                -moz-user-select: none; /* mozilla browsers */
+                -khtml-user-select: none; /* webkit (konqueror) browsers */
+                -ms-user-select: none; /* IE10+ */
+            }
+            
+            .diffMonth {
+                color:  #999999;
+            }
+            
+            .hover:hover {
+                background-color:  var(--primary-color);
+                color:  white;
+                cursor:  pointer;
+            }
+            
+            #header {
+                width: 100%;
+                color: white;
+                background-color: var(--primary-color);
+            }
+
+            #days {
+                left: 5px;
+                border-bottom: 2px solid #BBBBBB;
+            }
+
+            
+
+            .header
+        </style>
+
+        <div id="calender" class="container" hidden on-blur="close">
+            <paper-material elevation="3">
+                <div id="header" style="width: 100%">
+                    <div style="display:inline-block; text-align: left; width: 60px"><paper-icon-button icon="chevron-left" tabindex="-1" on-click="_prevMonth"></paper-icon-button></div>
+                    <div style="display:inline-block; text-align: center; width: 120px">[[_getMonth(monthArr.*, monthIndex, 'month')]] [[year]]</div>
+                    <div style="display:inline-block; text-align: right; width: 60px"><paper-icon-button icon="chevron-right" tabindex="-1" on-click="_nextMonth"></paper-icon-button></div>
+                </div>
+                <table>
+                    <tr id="days">
+                        <template is="dom-repeat" items="[[weekArr]]">
+                            <td>[[item]]</td>
+                        </template>
+                    </tr>
+
+                    <template is="dom-repeat" items="[[daysArr]]" as="row">
+                        <tr>
+                            <template is="dom-repeat" items="[[row]]" as="col">
+                                <td class$="{{_getClass(col)}}" on-click="_selectDate">[[col.day]]</td>
+                            </template>
+                        </tr>
+                    </template>
+
+                </table>
+            </paper-material>
+        </div>
+	</template>
+    <script>
+        Polymer({
+            is: 'date-picker',
+
+            attached: function ()
+            {
+                this._createArray();
+            },
+
+            properties: {
+                weekArr: {
+                    type: Array,
+                    value: [
+                        'Su',
+                        'Mo',
+                        'Tu',
+                        'We',
+                        'Th',
+                        'Fr',
+                        'Sa'
+                        ]
+                },
+                monthArr: {
+                    type: Array,
+                    value: [
+                        { month: 'January' },
+                        { month: 'February' },
+                        { month: 'March' },
+                        { month: 'April' },
+                        { month: 'May' },
+                        { month: 'June' },
+                        { month: 'July' },
+                        { month: 'August' },
+                        { month: 'September' },
+                        { month: 'October' },
+                        { month: 'November' },
+                        { month: 'December' }
+                        ]
+                },
+                daysArr: Array,
+                monthIndex: {
+                    type: Number,
+                    value: new Date().getMonth(),
+                    observer: '_createArray'
+                },
+                year: {
+                    type: Number,
+                    value: new Date().getFullYear()
+                },
+                opened: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            open: function (d)
+            {
+                if (d && !isNaN(Date.parse(d))) {
+                    var date = new Date(d);
+                    this.year = date.getFullYear();
+                    this.monthIndex = date.getMonth();
+                }
+                else {
+                    this.year = new Date().getFullYear();
+                    this.monthIndex = new Date().getMonth();
+                }
+
+                this.$.calender.hidden = false;
+                this.opened = true;
+            },
+
+            close: function ()
+            {
+                this.$.calender.hidden = true;
+                this.opened = false;
+            },
+
+            LeapYear: function (y)
+            {
+                return (y % 4 === 0) && ((y % 100 !== 0) || (y % 400 === 0));
+            },
+
+            DaysInMonth: function (m, y)
+            {
+                switch (m)
+                {
+                    case 1:
+                    case 3:
+                    case 5:
+                    case 7:
+                    case 8:
+                    case 10:
+                    case 12: return 31;
+                    case 2:
+                        if (this.LeapYear(y))
+                            return 29;
+                        else
+                            return 28;
+                    default:
+                        return 30;
+                }
+            },
+
+            FirstDayOfWeek: function (m, y)
+            {
+                var dow = 6;
+
+                for (i = 1583; i < y; i++)
+                {
+                    dow++;
+                    if (this.LeapYear(i))
+                        dow++;
+                }
+
+                for (i = 1; i < m; i++)
+                    dow += this.DaysInMonth(i, y);
+
+                return dow % 7;
+            },
+
+            _getClass: function (obj)
+            {
+                var classList = 'hover';
+
+                if (obj.diffMonth === true)
+                    classList += ' diffMonth';
+
+                return classList;
+            },
+
+            _createArray: function ()
+            {
+                var tmpArr = [];
+
+                var currDays = this.DaysInMonth(this.monthIndex + 1, this.year);
+                var day = 1;
+
+                var dow = this.FirstDayOfWeek(this.monthIndex + 1, this.year);
+
+                var row = [];
+
+                var prevMonth = this.monthIndex;
+                var prevYear = this.year;
+
+                if (prevMonth === 0)
+                { // January
+                    prevMonth = 12;
+                    prevYear--;
+                }
+
+                var prevDays = this.DaysInMonth(prevMonth, prevYear);
+
+                if (dow > 0)
+                {
+                    // First row
+                    for (i = 0; i < dow; i++)
+                        row.push({ day: (prevDays - dow + i + 1), diffMonth: true });
+                    for (i = dow; i < 7; i++)
+                    {
+                        row.push({ day: day, diffMonth: false });
+                        day++;
+                    }
+                }
+                else
+                {
+                    // Push days from previous month
+                    for (i = 0; i < 7; i++)
+                        row.push({ day: (prevDays - 7 + i + 1), diffMonth: true });
+                }
+
+                tmpArr.push(row);
+
+                while (day <= currDays)
+                {
+                    row = [];
+
+                    for (i = 0; i < 7; i++)
+                    {
+                        if (day <= currDays)
+                        {
+                            row.push({ day: day, diffMonth: false });
+                            day++;
+                        }
+                        else
+                            break;
+                    }
+
+                    if (day <= currDays)
+                        tmpArr.push(row);
+                }
+
+                day = 1;
+
+                for (i = row.length; i < 7; i++)
+                {
+                    row.push({ day: day, diffMonth: true });
+                    day++;
+                }
+
+                tmpArr.push(row);
+
+                if (tmpArr.length < 6)
+                {
+                    row = [];
+
+                    for (i = 0; i < 7; i++)
+                    {
+                        row.push({ day: day, diffMonth: true });
+                        day++;
+                    }
+
+                    tmpArr.push(row);
+                }
+
+                this.set('daysArr', tmpArr);
+            },
+
+            _getMonth: function (change, index, path)
+            {
+                return this.get(path, change.base[index]);
+            },
+
+            _prevMonth: function ()
+            {
+                if (this.monthIndex === 0)
+                {
+                    this.year--;
+                    this.monthIndex = 11;
+                }
+                else
+                    this.monthIndex--;
+            },
+
+            _nextMonth: function ()
+            {
+                if (this.monthIndex === 11)
+                {
+                    this.year++;
+                    this.monthIndex = 0;
+                }
+                else
+                    this.monthIndex++;
+            },
+
+            _selectDate: function (e)
+            {
+                var item = e.model.col;
+
+                var month;
+                var year;
+
+                // Different month
+                if (item.diffMonth === true)
+                {
+                    if (item.day < 15)
+                        this._nextMonth();
+                    else
+                        this._prevMonth();
+                }
+                else
+                {
+                    this.fire('date-picked', new Date(this.year, this.monthIndex, item.day));
+                    this.close();
+                }
+
+            }
+        });
+    </script>
+</dom-module>

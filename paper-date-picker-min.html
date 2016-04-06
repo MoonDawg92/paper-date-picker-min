@@ -1,0 +1,111 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/paper-input/paper-input.html">
+<link rel="import" href="bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="bower_components/paper-material/paper-material.html">
+<link rel="import" href="bower_components/paper-fab/paper-fab.html">
+
+<link rel="import" href="date-picker.html">
+
+<dom-module id="paper-date-picker-min">
+	<template>
+        <style>
+            paper-input {
+                display: inline-block;
+            }
+
+            paper-icon-button {
+                margin-left: -5px;
+            }
+        </style>
+
+        <div style="display: inline-block">
+            <paper-input id="input" label="[[label]]" size="[[size]]" on-focus="_showPicker" on-keydown="_hidePicker"></paper-input>
+            <paper-icon-button id="icon" icon="event" tabindex="-1" on-click="_togglePicker"></paper-icon-button>
+
+            <date-picker id="picker" on-date-picked="_populateInput"></date-picker>
+        </div>
+	</template>
+    <script>
+        // Polymer doesn't have on-scroll listeners
+        function _mouseWheelHandler(e) {
+            var next = (e.deltaY > 0);
+
+            var polymer = document.querySelector("paper-date-picker-min");
+
+            if(next)
+                polymer.$.picker._nextMonth();
+            else
+                polymer.$.picker._prevMonth();
+        };
+
+        Polymer({
+            is: 'paper-date-picker-min',
+
+            attached: function () {
+                var element = this.$.picker;
+                element.addEventListener("mousewheel", _mouseWheelHandler, false);
+            },
+
+            properties: {
+                label: {
+                    type: String,
+                    value: 'Date:'
+                },
+                size: {
+                    type: Number,
+                    value: 10
+                },
+                showOnFocus: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            _togglePicker: function() {
+                if (this.$.picker.opened === false) {
+                    this.$.input.focus();
+                    this.$.picker.open(this.$.input.value);
+                }
+                else
+                    this.$.picker.close();
+            },
+
+            _showPicker: function() {
+                if(this.showOnFocus === true)
+                    this.$.picker.open(this.$.input.value);
+            },
+
+            _hidePicker: function(e) {
+                // Closes on tab out
+                var TABKEY = 9;
+
+                if(e.keyCode == TABKEY && this.$.input.focused === true) 
+                    this.$.picker.close();
+            },
+
+            _populateInput: function(e) {
+                var date = e.detail;
+
+                this.$.input.value = (this._leftPad(date.getMonth() + 1, 2) + '/' + this._leftPad(date.getDate(), 2) + '/' + date.getFullYear());
+            },
+
+            _leftPad: function(str, length) {
+                var string = '';
+
+                for (i = 0; i < length; i++)
+                {
+                    string += '0';
+                }
+
+                string += str;
+
+                return string.slice(length * -1);
+            },
+
+            _focusInput: function() {      
+                this.$.input.focus();
+            }
+        });
+    </script>
+</dom-module>
