@@ -5,7 +5,6 @@
 <link rel="import" href="bower_components/paper-material/paper-material.html">
 <link rel="import" href="bower_components/paper-fab/paper-fab.html">
 
-
 <dom-module id="date-picker">
 	<template>
         <style>
@@ -44,14 +43,24 @@
                 -ms-user-select: none; /* IE10+ */
             }
             
+            .day:hover {
+                background-color:  var(--primary-color);
+                color:  white;
+                cursor:  pointer;
+            }
+            
             .diffMonth {
                 color:  #999999;
             }
             
-            .hover:hover {
+            .today {
+                background-color: #DDDDDD;
+            }
+            
+            .selected {
+                font-weight: bolder;
                 background-color:  var(--primary-color);
                 color:  white;
-                cursor:  pointer;
             }
             
             #header {
@@ -64,10 +73,6 @@
                 left: 5px;
                 border-bottom: 2px solid #BBBBBB;
             }
-
-            
-
-            .header
         </style>
 
         <div id="calender" class="container" hidden on-blur="close">
@@ -136,10 +141,10 @@
                         ]
                 },
                 daysArr: Array,
+                currDate: Date,
                 monthIndex: {
                     type: Number,
-                    value: new Date().getMonth(),
-                    observer: '_createArray'
+                    value: new Date().getMonth()
                 },
                 year: {
                     type: Number,
@@ -153,15 +158,21 @@
 
             open: function (d)
             {
-                if (d && !isNaN(Date.parse(d))) {
+                if (d && !isNaN(Date.parse(d)))
+                {
                     var date = new Date(d);
+                    this.currDate = date;
                     this.year = date.getFullYear();
                     this.monthIndex = date.getMonth();
                 }
-                else {
+                else
+                {
+                    this.currDate = null;
                     this.year = new Date().getFullYear();
                     this.monthIndex = new Date().getMonth();
                 }
+
+                this._createArray();
 
                 this.$.calender.hidden = false;
                 this.opened = true;
@@ -218,10 +229,20 @@
 
             _getClass: function (obj)
             {
-                var classList = 'hover';
+                var classList = 'day';
 
                 if (obj.diffMonth === true)
                     classList += ' diffMonth';
+
+                var date = new Date();
+                if (obj.diffMonth === false && date.getFullYear() === this.year && date.getDate() === obj.day && date.getMonth() === this.monthIndex)
+                    classList += ' today';
+
+                if (obj.diffMonth === false && this.currDate && this.currDate.getMonth() === this.monthIndex && this.currDate.getDate() === obj.day && this.currDate.getFullYear() === this.year)
+                {
+                    classList += ' selected';
+                    console.log(this.year + ' ' + this.currDate);
+                }
 
                 return classList;
             },
@@ -327,6 +348,8 @@
                 }
                 else
                     this.monthIndex--;
+
+                this._createArray();
             },
 
             _nextMonth: function ()
@@ -338,6 +361,8 @@
                 }
                 else
                     this.monthIndex++;
+
+                this._createArray();
             },
 
             _selectDate: function (e)

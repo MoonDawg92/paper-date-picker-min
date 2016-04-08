@@ -20,7 +20,7 @@
         </style>
 
         <div style="display: inline-block">
-            <paper-input id="input" label="[[label]]" size="[[size]]" on-focus="_showPicker" on-keydown="_hidePicker"></paper-input>
+            <paper-input id="input" label="[[label]]" size="[[size]]" on-focus="_showPicker" on-keydown="_hidePicker" on-focusout="_formatDate"></paper-input>
             <paper-icon-button id="icon" icon="event" tabindex="-1" on-click="_togglePicker"></paper-icon-button>
 
             <date-picker id="picker" on-date-picked="_populateInput"></date-picker>
@@ -28,12 +28,14 @@
 	</template>
     <script>
         // Polymer doesn't have on-scroll listeners
-        function _mouseWheelHandler(e) {
+        function _mouseWheelHandler(e)
+        {
             var next = (e.deltaY > 0);
+
 
             var polymer = document.querySelector("paper-date-picker-min");
 
-            if(next)
+            if (next)
                 polymer.$.picker._nextMonth();
             else
                 polymer.$.picker._prevMonth();
@@ -42,7 +44,8 @@
         Polymer({
             is: 'paper-date-picker-min',
 
-            attached: function () {
+            attached: function ()
+            {
                 var element = this.$.picker;
                 element.addEventListener("mousewheel", _mouseWheelHandler, false);
             },
@@ -62,8 +65,10 @@
                 }
             },
 
-            _togglePicker: function() {
-                if (this.$.picker.opened === false) {
+            _togglePicker: function ()
+            {
+                if (this.$.picker.opened === false)
+                {
                     this.$.input.focus();
                     this.$.picker.open(this.$.input.value);
                 }
@@ -71,26 +76,70 @@
                     this.$.picker.close();
             },
 
-            _showPicker: function() {
-                if(this.showOnFocus === true)
+            _showPicker: function ()
+            {
+                if (this.showOnFocus === true)
                     this.$.picker.open(this.$.input.value);
             },
 
-            _hidePicker: function(e) {
+            _hidePicker: function (e)
+            {
                 // Closes on tab out
                 var TABKEY = 9;
 
-                if(e.keyCode == TABKEY && this.$.input.focused === true) 
+                if (e.keyCode == TABKEY && this.$.input.focused === true)
                     this.$.picker.close();
             },
 
-            _populateInput: function(e) {
-                var date = e.detail;
+            _formatDate: function ()
+            {
+                if (this.$.picker.opened === true)
+                    return;
 
-                this.$.input.value = (this._leftPad(date.getMonth() + 1, 2) + '/' + this._leftPad(date.getDate(), 2) + '/' + date.getFullYear());
+                var str = this.$.input.value;
+                var arr = str.split('/');
+                str = arr.join('');
+
+                if (isNaN(str))
+                    this.$.input.value = '';
+
+                else if (arr.length === 3)
+                {
+                    var date = new Date(arr[2], (arr[0] - 1), arr[1]);
+                    this.$.input.value = this._padDate(date);
+                    return;
+                }
+
+                else if (str.length == 6)
+                {
+                    var date = new Date(str.substring(4), (str.substring(0, 2) - 1), str.substring(2, 4));
+                    this.$.input.value = this._padDate(date);
+                }
+
+                else if (str.length == 8)
+                {
+                    var date = new Date(str.substring(4), (str.substring(0, 2) - 1), str.substring(2, 4));
+                    this.$.input.value = this._padDate(date);
+                }
+
+                else
+                    this.$.input.value = '';
             },
 
-            _leftPad: function(str, length) {
+            _populateInput: function (e)
+            {
+                var date = e.detail;
+
+                this.$.input.value = this._padDate(date);
+            },
+
+            _padDate: function (d)
+            {
+                return (this._leftPad(d.getMonth() + 1, 2) + '/' + this._leftPad(d.getDate(), 2) + '/' + d.getFullYear());
+            },
+
+            _leftPad: function (str, length)
+            {
                 var string = '';
 
                 for (i = 0; i < length; i++)
@@ -103,7 +152,8 @@
                 return string.slice(length * -1);
             },
 
-            _focusInput: function() {      
+            _focusInput: function ()
+            {
                 this.$.input.focus();
             }
         });
